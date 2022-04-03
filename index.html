@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>FCC Technical Documentation</title>
+    <title>Note Installation Documents</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -209,95 +209,83 @@ root@server:/var/log/snort# watch -n 3 tail /var/log/snort/alert</pre
         </p>
         <header>Instalation</header>
         <p>Please choose your operating system to view the installation guide i use ubuntu.</p>
+        <p>1 MENDAPATKAN HAK ISTIMEWA PENGGUNA SUPER (ROOT)</p>
+        <p>Instalasi Snort dan Snowl di Ubuntu membutuhkan hak superuser (root). Cara paling sederhana adalah mendapatkan terminal dengan hak akses root menggunakan perintah su (kata sandi pengguna root harus dimasukkan):</p>
         <code>
           <pre>
-    Biasa Nya Saya Simpan Hasil Download Nya Disini
-            root@server-IDS-IPS:/var/log/snort# cd /usr/local/src/
-            root@server-IDS-IPS:/usr/local/src# wget https://snowl.io/download/snowl-install-ubuntu.sh
-            root@server-IDS-IPS:/usr/local/src# ls
-            snowl-install-ubuntu.sh
-            root@server-IDS-IPS:/usr/local/src# chmod 755 snowl-install-ubuntu.sh
-            root@server-IDS-IPS:/usr/local/src# ./snowl-install-ubuntu.sh
-
-    KETIK yes
-            Install Snowl? (yes/no, default yes): yes
-    AKAN DI TANYA LAGI KETIK yes
-            CEK DI WEB BROWSER
-            192.168.100.216:5500
-    LOGIN USERNAME & PASSWORD NYA
-            admin
-            123456
-    UBAH PASSWORD NYA BIAR AMAN !!!
-
-    CEK SNOWL
-            root@server-IDS-IPS:/usr/local/src# ps -ef | grep snowl
-            root@server-IDS-IPS:/usr/local/src# netstat -ntpl | grep 5500
-
-    CARA MENAMBAHKAN RULE
-    INI TERGANTUNG SERVER NYA, SERVER NYA ADA APLIKASI APA SAJA
-    AGA BERAT INI TERGANTUNG SPEK SERVER NYA
-    1. BUKA DI BROWSER 192.168.100.216:5500
-    2. PILIH THREAT POLICIES
-    3. Add new policy
-    4. UNTUK Rule urls KLIK DI BAWAHNYA ADA Examples; ADA 2 Rules, COPY SAJA YANG SATU ADA oinkcode= 
-    HARUS LOGIN DULU DI WEBSITE SNORT NYA UNTUK MELIHAT ID NYA INI BISA PAKE BAWAAN Snort ATAU DOWNLOAD 
-    Rules Snort DI SINI https://www.snort.org/downloads PAKE YANG Rules Community KARENA GRATIS, 
-    SAMA SAJA SEPERTI BAWAAN NYA SEBELUM DOWNLOAD RULE NYA, CEK VERSION SNORT NYA DULU CARA NYA 
-    KALO VERSION NYA 2.9.16 PAKE RULE NYA V2.9 KALO VERISON NYA 3.0 PAKE V3.0
-            root@server-IDS-IPS:/var/log/snort# snort --version
-
-    COPY SAJA DIBAGIAN Snort v2.9
-    KETIKAN SEPERTI DI BAWAH
-    Name              : PolicySatu
-    Description       : Policy Satu untuk keamanan VLAN intarnet
-    Rule urls         : https://www.snort.org/downloads/community/community-rules.tar.gz
-                        https://rules.emergingthreats.net/open-nogpl/snort-2.9.0/emerging.rules.tar.gz
-    IP blacklist urls : https://talosintelligence.com/documents/ip-blacklist
-    SAVE
-    ITU SAJA YANG DI TAMBAHKAN PILIH (SAVE)
-
-    SNOWL INSTALLATION
-    Server web diperlukan untuk pengoperasian Snowl. Itu bisa Apache atau Nginx.
-    Pilih dan instal salah satunya, misalnya Apache.
-
-    PILIH SALAH SATU PENGEN PAKE APA apache2 ATAU PAKE nginx
-    Apache installation
-            root@server-IDS-IPS:/home/arif#sudo apt install apache2
-
-    Nginx installation
-            root@server-IDS-IPS:/home/arif#sudo apt install nginx
-
-    Jalankan perintah berikut untuk menginstal Snowl:
-            wget https://snowl.io/download/snowl_1.7.2_amd64.deb && dpkg -i ./snowl_1.7.2_amd64.deb
-
-    Konfigurasikan server web untuk bekerja dengan Snowl. Untuk tujuan ini, lakukan hal berikut:
-            /opt/snowl/snowl-configure-httpd
-
-    UNTUK MENGHAPUS SNOWL CEK DULU
-            root@server-IDS-IPS:/home/arif# dpkg -l | grep snowl
-            ii  snowl-sensor           1.7.2            amd64        Intrusion Detection System SNOWL
-
-    STOP DULU
-            root@server-IDS-IPS:/home/arif# service snowl-sensor stop
-            root@server-IDS-IPS:/home/arif# service snowl stop
-
-    HAPUS SNOWL
-            root@server-IDS-IPS:/home/arif# dpkg -r snowl
-            root@server-IDS-IPS:/home/arif# dpkg -r snowl-sensor
-            
-    CEK
-            root@server-IDS-IPS:/home/arif# dpkg -l | grep snort
-            
-    STOP DULU
-            root@server-IDS-IPS:/home/arif# service snowl stop
-            
-    MENGHAPUS SNORT
-            root@server-IDS-IPS:/home/arif# apt-get remove snort*
-            root@server-IDS-IPS:/home/arif# apt-get remove --purge snort*
-            </pre
+arif@Testing:~$ ssh arif@192.168.100.127
+arif@server-IDS-IPS:~$ sudo su
+arif@server-IDS-IPS:~# sudo apt-get update</pre
           >
         </code>
-      </section>
+        <p>2 SNOWL AUTOMATIC INSTALLATION SCRIPT</p>
+        <p>Semua langkah yang diperlukan untuk menginstal Snort, Snowl, yang dijelaskan di bawah ini disatukan menjadi skrip, Anda dapat mengunduh dan menjalankannya menggunakan perintah berikut:</p>
+        <p>Biasa Nya Saya Simpan Hasil Download Nya Disini</p>
+        <code>
+          <pre>
+root@server-IDS-IPS:/home/arif# cd /usr/local/src/
+root@server-IDS-IPS:/usr/local/src# wget https://snowl.io/download/snowl-install-ubuntu.sh && bash ./snowl-install-ubuntu.sh</pre
+          >
+        </code>
+        <p>Skrip akan melakukan langkah-langkah yang dijelaskan di bawah dengan persetujuan otomatis ke varian yang direkomendasikan.</p>
+        <p>Hanya dua pertanyaan yang akan diajukan:</p>
+        <p>KETIK yes</p>
+        <code>
+          <pre>
+            Install Snowl? (yes/no, default yes): yes</pre>
+        </code>
+        <p>AKAN DI TANYA LAGI KETIK yes</p>
+        <code>
+          <pre>
+Now you can see snowl at address http://<HOST_IP>:5500
+Сongratulations, the Snowl is successfully installed
+Install Snowl-sensor? (yes/no, default yes): yes</pre>
+        </code>
+        <p>VERIFIKASI INSTALASI</p>
+        <p>Untuk memverifikasi kebenaran pemasangan, buka browser (disarankan Google Chrome atau Mozilla Firefox) dan ketik yang berikut di bilah alamat:</p>
+        <code>
+          <pre>
+http://192.168.100.127:5500/</pre>
+        </code>
+        <img src="img-snowl-snort/1.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <p>di mana [alamat IP] – sesuai dengan alamat IP server tempat SNOWL diinstal.</p>
+        <p>Anda akan melihat halaman login antarmuka Snowl. (Pengingat: Secara default, nama pengguna dan kata sandi Anda masing-masing sama dengan admin dan 123456. Kami</p>
+        <p>Tampilan Dasboard Masih Kosong</p>
+        <img src="img-snowl-snort/2.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <p>INSTALLATION OF SNOWL SENSOR</p>
+        <p>INSTALL SNORT DI SERVER YANG AKAN DI MONITOR</p>
+        <p>Jika Anda sudah menginstal dan menjalankan Snort, pastikan Anda menggunakan versi stabil terbaru</p>
+        <p>Untuk menginstal Snort dari repositori snowl/snort, jalankan perintah berikut:</p>
+        <code>
+          <pre>
+            root@server-ubuntu:/home/arif# add-apt-repository ppa:snowl/snort
+            root@server-ubunu:/home/arif# apt update
+            root@server-ubuntu:/home/arif# apt install -y snort</pre>
+          </code>
+          <p>Sebaiknya nonaktifkan autorun dengan perintah Snort yang dijelaskan di bawah ini. Snowl akan mengontrol mulai dan berhenti</p>
+          <code>
+            <pre>
+              root@server-ubuntu:/home/arif# systemctl stop snort</pre>
+            </code>
+            <p>Untuk memasang sensor Snowl, jalankan:</p>
+            <code>
+              <pre>
+                wget https://snowl.io/download/snowl-sensor_1.7.2_amd64.deb && dpkg -i ./snowl-sensor_1.7.2_amd64.deb</pre>
+              </code>
+        <p>Kemudian, Anda perlu mengatur hak untuk pengoperasian sensor Snowl dengan Snort (mulai/berhenti). Untuk tujuan ini, jalankan:</p>
+        <code>
+          <pre>
+            root@server-ubuntu:/home/arif# /opt/snowl-sensor/snowl-snort fix
+            Success</pre>
+          </code>
+          <P>Configuration</P>
+          <P>Masukan Rule Nya Yang Sudah Tersedia</P>
+          <img src="img-snowl-snort/3.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+          <p>Server Yang Akan Di Monitor</p>
+          <img src="img-snowl-snort/4.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+          <p>START</p>
+          <img src="img-snowl-snort/5.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        </section>
 
       <section class="main-sections" id="Installation_Rkhunter">
         <header>Rkhunter</header>

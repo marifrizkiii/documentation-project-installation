@@ -20,7 +20,7 @@ nav header {
 
 /* Nav */
 nav {
-  border-right: 3px solid #333;
+  border-right: 10px solid #333;
   width: 1000px;
 }
 
@@ -30,7 +30,7 @@ nav header {
 
 nav a {
   display: block;
-  border-top: 1px solid #333;
+  border-top: 5px solid #333;
   padding: 15px;
   text-decoration: none;
   color: #333;
@@ -46,6 +46,7 @@ main {
 
 code pre {
   background-color: rgb(109, 109, 109);
+  width: 1030px;
   padding: 20px;
 }
 
