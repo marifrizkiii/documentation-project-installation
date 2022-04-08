@@ -16,6 +16,7 @@
       <a href="#Installation_Snowl_Snort_GUI" class="nav-link">Installation Snowl-Snort GUI</a>
       <a href="#Installation_Rkhunter" class="nav-link">Installation Rkhunter</a>
       <a href="#Installation_Nagios" class="nav-link">Installation NaGIOS</a>
+      <a href="#Installation_Zabbix" class="nav-link">Installation Zabbix</a>
       <a href="#Open_VPN_IPv4" class="nav-link">Open VPN IPv4</a>
     </nav>
     <main id="main-doc">
@@ -854,6 +855,118 @@ arif@server-nagios:/usr/local/nagios/etc$ sudo systemctl status nagios</pre
         <img src="img/4.png" alt="tampilan nagios" width="1000" class="rounded-circle img-thumbnail" />
         <p>Sekarang, klik pada tab service di panel kiri, Kita akan melihat semua layanan di halaman berikut:</p>
         <img src="img/5.png" alt="tampilan nagios" width="1000" class="rounded-circle img-thumbnail" />
+      </section>
+      
+      <section class="main-section" id="Installation_Zabbix">
+        <header>Zabbix</header>
+        <p>Zabbix is designed primarily as an IT infrastructure monitoring tool. New features are generally released every six months to major versions and every 1.5 years to LTS versions.
+            Released under the terms of GNU General Public License version 2, Zabbix is free software that does not require a license to use any of its features. Even though Zabbix is open-source software, it is a closed development software product, developed by Zabbix LLC based in Riga Latvia.
+        </p>
+
+        <header>Use</header>
+        <p>1. Pilih platform</p>
+        <ul>
+          <li>ZABBIX VERSION > 6.0 LTS</li>
+          <li>OS DISTRIBUTION > Ubuntu</li>
+          <li>OS VERSION > 20.04</li>
+          <li>WEB SERVER > NGINX</li>
+        </ul>
+        <header>Installation Zabbix dan Monitoring Website di Ubuntu 20.04</header>
+        <p>2. Instal dan konfigurasikan server Zabbix untuk platform Anda</p>
+        <p>a. Install Zabbix repository</p>
+        <code>
+          <pre>
+arif@server-zabbix:~$ sudo apt-get update 
+arif@server-zabbix:~$ cd /usr/local/src/
+arif@server-zabbix:/usr/local/src$ sudo wget https://repo.zabbix.com/zabbix/6.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_6.0-1+ubuntu20.04_all.deb
+arif@server-zabbix:/usr/local/src$ sudo dpkg -i zabbix-release_6.0-1+ubuntu20.04_all.deb 
+arif@server-zabbix:/usr/local/src$ sudo apt-get update</pre>
+        </code>
+        <p>b. Instal server Zabbix, frontend, agen </p>
+        <code>
+          <pre>
+arif@server-zabbix:/usr/local/src$ sudo apt install zabbix-server-mysql zabbix-frontend-php zabbix-nginx-conf zabbix-sql-scripts zabbix-agent</pre>
+        </code>
+        <p>c. Create initial database</p>
+        <p>Pastikan Anda memiliki server database dan berjalan.</p>
+        <p>Jalankan yang berikut ini di host database Anda.</p>
+        <code>
+          <pre>
+arif@server-zabbix:/usr/local/src$ sudo apt-get install mysql-server mysql-client</pre>
+        </code>
+        <p>Supaya Aman</p>
+        <code>
+          <pre>
+arif@server-zabbix:/usr/local/src$ sudo mysql_secure_installation</pre>
+        </code>
+        <p>Masuk ke Database</p>
+        <code>
+          <pre>
+root@server-zabbix:/usr/local/src# mysql -u root -p
+
+mysql> create database zabbix character set utf8mb4 collate utf8mb4_bin;
+Query OK, 1 row affected (0.89 sec)
+
+mysql> create user zabbix@localhost identified by 'Password';
+Query OK, 0 rows affected (0.55 sec)
+
+mysql> grant all privileges on zabbix.* to zabbix@localhost;
+Query OK, 0 rows affected (0.74 sec)
+
+mysql> quit</pre>
+        </code>
+        <p>Pada host server Zabbix, impor skema dan data awal. Anda akan diminta untuk memasukkan kata sandi yang baru Anda buat.</p>
+        <p>AGA LAMA PROSES NYA TUNGGU SAJA</p>
+        <code>
+          <pre>
+zcat /usr/share/doc/zabbix-sql-scripts/mysql/server.sql.gz | mysql -uzabbix -p zabbix</pre>
+        </code>
+        <p>d. Configure the database for Zabbix server</p>
+        <p>Edit file /etc/zabbix/zabbix_server.conf</p>
+        <code>
+          <pre>
+root@server-zabbix:/usr/local/src# vim /etc/zabbix/zabbix_server.conf 
+DBPassword=password</pre>
+        </code>
+        <p>e. Configure PHP for Zabbix frontend</p>
+        <p>Edit file /etc/zabbix/nginx.conf, uncomment and set 'listen' and 'server_name' directives.</p>
+        <p>BUANG PAGAR NYA #</p>
+        <code>
+          <pre>
+  listen          80;
+  server_name     192.168.100.233;</pre>
+        </code>
+        <p>F. Mulai server Zabbix dan proses agen</p>
+        <p>Mulai proses server dan agen Zabbix dan buat itu mulai saat boot sistem.</p>
+        <code>
+          <pre>
+root@server-zabbix:/usr/local/src# systemctl restart zabbix-server zabbix-agent nginx php7.4-fpm
+root@server-zabbix:/usr/local/src# systemctl enable zabbix-server zabbix-agent nginx php7.4-fpm</pre>
+        </code>
+        <p>G. Konfigurasikan frontend Zabbix</p>
+        <p>Hubungkan ke frontend Zabbix yang baru Anda instal: http://server_ip_or_name</p>
+        <p>Ikuti langkah-langkah yang dijelaskan dalam dokumentasi Zabbix: Menginstal frontend</p>
+        <p>http://192.168.100.233</p>
+        <img src="img-zabbix/1.png" alt="login" width="800" class="rounded-circle img-thumbnail" />
+        <p></p>
+        <img src="img-zabbix/2.png" alt="login" width="800" class="rounded-circle img-thumbnail" />
+        <p></p>
+        <img src="img-zabbix/3.png" alt="login" width="800" class="rounded-circle img-thumbnail" />
+        <p></p>
+        <img src="img-zabbix/4.png" alt="login" width="800" class="rounded-circle img-thumbnail" />
+        <p></p>
+        <img src="img-zabbix/5.png" alt="login" width="800" class="rounded-circle img-thumbnail" />
+        <p></p>
+        <img src="img-zabbix/6.png" alt="login" width="800" class="rounded-circle img-thumbnail" />
+        <p></p>
+        <img src="img-zabbix/7.png" alt="login" width="800" class="rounded-circle img-thumbnail" />
+        <p>Sorry Ini Screnshoot Yang Sudah Ada Monitoring Web Nya, Pastikan Running Aja</p>
+        <img src="img-zabbix/8.png" alt="login" width="800" class="rounded-circle img-thumbnail" />
+        <code>
+          <pre> 
+username : Admin
+password : zabbix</pre>
+        </code>
       </section>
 
       <section class="main-section" id="Open_VPN_IPv4">
