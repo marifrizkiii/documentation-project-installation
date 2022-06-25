@@ -12,6 +12,7 @@
     <nav id="navbar">
       <header>My Documents Installation Project</header>
       <a href="#Firewal" class="nav-link">Firewal</a>
+      <a href="#Installation_Zabbix_Server_With_Docker" class="nav-link">Installation Zabbix Server With Docker</a>
       <a href="#Installation_Snort" class="nav-link">Installation Snort</a>
       <a href="#Installation_Snowl_Snort_GUI" class="nav-link">Installation Snowl-Snort GUI</a>
       <a href="#Installation_Rkhunter" class="nav-link">Installation Rkhunter</a>
@@ -27,6 +28,433 @@
           defense in network security for over 25 years. They establish a barrier between secured and controlled internal networks that can be trusted and untrusted outside networks, such as the Internet. A firewall can be hardware,
           software, or both.
         </p>
+      </section>
+
+      <section class="main-section" id="Installation_Zabbix_Server_With_Docker">
+        <header>Cara Menjalankan Zabbix Server 6 di Docker Containers</header>
+        <p>menjalankan Zabbix Server 6.0 LTS di Docker Containers. Zabbix adalah alat kelas perusahaan yang kuat dan gratis dan open-source yang digunakan untuk memantau dan menganalisis kinerja komponen. Zabbix menawarkan pemantauan jaringan secara real-time, mengidentifikasi kesalahan segera setelah terjadi, dan mengirimkan peringatan ke tim respons. Ini membantu untuk memastikan kelangsungan bisnis. Zabbix memiliki inti berdasarkan bahasa C dengan frontend Java dan PHP.
+Arsitektur Zabbix terdiri dari server Zabbix dan Klien. Server biasanya berkomunikasi dengan klien asli yang dikenal sebagai agen Zabbix. Agen dapat berupa sistem Linux, Windows, atau NIX. Agen Zabbix adalah perangkat lunak klien yang diinstal pada mesin klien untuk mengumpulkan log pemantauan dan mengirimkannya ke server.
+Di bawah ini adalah ilustrasi arsitektur Zabbix.</p>
+        <p>
+        Instal Docker CE di Sistem Anda
+        </p>
+        <code>
+          <pre>
+[arif@server-centos7 ~]$ sudo yum install dnf
+[arif@server-centos7 ~]$ curl -fsSL get.docker.com -o get-docker.sh
+[arif@server-centos7 ~]$ sudo sh get-docker.sh
+[arif@server-centos7 ~]$ sudo dnf install -y yum-utils
+[arif@server-centos7 ~]$ sudo yum-config-manasudo dnf -y install docker-ce docker-ce-cli containerd.io
+[arif@server-centos7 ~]$ sudo dnf -y install docker-ce docker-ce-cli containerd.io</pre>
+        </code>
+        <p>Check Version Docker</p>
+        <code>
+          <pre>
+[arif@server-centos7 ~]$ docker --version 
+Docker version 20.10.17, build 100c701</pre>
+        </code>
+        <p>
+Set Biar Auto Running 
+        </p>
+        <code>
+          <pre>
+[arif@server-centos7 ~]$ sudo systemctl enable --now docker</pre>
+        </code>
+          <p>
+Add user
+        </p>
+        <code>
+          <pre>
+[arif@server-centos7 ~]$ sudo usermod -aG docker $USER
+[arif@server-centos7 ~]$ newgrp docker</pre>
+        </code>
+        <p>
+Next – Buat Volume Persisten Data Zabbix
+Agar data Zabbix tetap ada, kita perlu membuat volume untuk data tersebut. Untuk Zabbix, kita membutuhkan volume berikut:</p>
+        <code>
+          <pre>
+[root@server-centos7 arif]# sudo mkdir /zabbix-data
+[root@server-centos7 arif]# sudo mkdir /zabbix-data/alertscripts
+[root@server-centos7 arif]# sudo mkdir /zabbix-data/externalscripts
+[root@server-centos7 arif]# sudo mkdir /zabbix-data/export
+[root@server-centos7 arif]# sudo mkdir /zabbix-data/modules
+[root@server-centos7 arif]# sudo mkdir /zabbix-data/enc
+[root@server-centos7 arif]# sudo mkdir /zabbix-data/ssh_keys
+[root@server-centos7 arif]# sudo mkdir /zabbix-data/mibs
+[root@server-centos7 arif]# sudo mkdir /zabbix-data/snmptraps
+[root@server-centos7 arif]# sudo mkdir -p /zabbix-nginx/nginx
+[root@server-centos7 arif]# sudo mkdir /zabbix-nginx/modules
+[root@server-centos7 arif]# sudo mkdir /zabbix-mysql</pre>
+        </code>
+        <p>
+        Tetapkan izin yang tepat:</p>
+        <code>
+          <pre>
+[root@server-centos7 arif]# sudo chmod 777 -R /zabbix-data/
+[root@server-centos7 arif]# sudo chmod 777 -R /zabbix-nginx/
+[root@server-centos7 arif]# sudo chmod 777 /zabbix-mysql/</pre>
+        </code>
+        <p>Pada sistem berbasis Rhel, nonaktifkan SELinux atau atur dalam mode permisif seperti di bawah ini:</p>
+        <code>
+          <pre>
+[root@server-centos7 arif]# sudo sed -i 's/^SELINUX=.*/SELINUX=permissive/g' /etc/selinux/config
+          </pre>
+        </code>
+        <p>
+Next – Run Zabbix Server 6.0 LTS in Docker Containers
+Dalam panduan ini, kita akan menjalankan Zabbix dengan database MySQL, meskipun masih bisa dijalankan dengan PostgreSQL.
+Kami akan memiliki wadah berikut:</p>
+        <code>
+          <pre>
+[root@server-centos7 arif]# docker network create --subnet 172.20.0.0/16 --ip-range 172.20.240.0/20 zabbix-net
+[root@server-centos7 arif]# docker run --name mysql-server -t \
+      -e MYSQL_DATABASE="zabbixdb" \
+      -e MYSQL_USER="zabbix" \
+      -e MYSQL_PASSWORD="Password123" \
+      -e MYSQL_ROOT_PASSWORD="Password12345" \
+      --network=zabbix-net \
+      -d mysql:8.0 \
+      --character-set-server=utf8 --collation-server=utf8_bin \
+      --default-authentication-plugin=mysql_native_password
+
+[root@server-centos7 arif]# docker run --name zabbix-java-gateway -t \
+      --network=zabbix-net \
+      --restart unless-stopped \
+      -d zabbix/zabbix-java-gateway:alpine-6.0-latest
+
+[root@server-centos7 arif]# docker run --name zabbix-server-mysql -t \
+      -e DB_SERVER_HOST="mysql-server" \
+      -e MYSQL_DATABASE="zabbixdb" \
+      -e MYSQL_USER="zabbix" \
+      -e MYSQL_PASSWORD="Password123" \
+      -e MYSQL_ROOT_PASSWORD="Password12345" \
+      -e ZBX_JAVAGATEWAY="zabbix-java-gateway" \
+      --network=zabbix-net \
+      -p 10051:10051 \
+      --restart unless-stopped \
+      -d zabbix/zabbix-server-mysql:alpine-6.0-latest
+
+[root@server-centos7 arif]# docker run --name zabbix-web-nginx-mysql -t \
+      -e ZBX_SERVER_HOST="zabbix-server-mysql" \
+      -e DB_SERVER_HOST="mysql-server" \
+      -e MYSQL_DATABASE="zabbixdb" \
+      -e MYSQL_USER="zabbix" \
+      -e MYSQL_PASSWORD="Password123" \
+      -e MYSQL_ROOT_PASSWORD="Password12345" \
+      --network=zabbix-net \
+      -p 80:8080 \
+      --restart unless-stopped \
+      -d zabbix/zabbix-web-nginx-mysql:alpine-6.0-latest</pre>
+        </code>
+        <p>Check</p>
+        <code>
+          <pre>
+[root@server-centos7 arif]# docker ps
+CONTAINER ID   IMAGE                                             COMMAND                  CREATED          STATUS          PORTS                                             NAMES
+e0c725760e74   zabbix/zabbix-web-nginx-mysql:alpine-6.0-latest   "docker-entrypoint.sh"   58 seconds ago   Up 55 seconds   8443/tcp, 0.0.0.0:80->8080/tcp, :::80->8080/tcp   zabbix-web-nginx-mysql
+3d8320c32ea6   zabbix/zabbix-server-mysql:alpine-6.0-latest      "/sbin/tini -- /usr/…"   4 minutes ago    Up 4 minutes    0.0.0.0:10051->10051/tcp, :::10051->10051/tcp     zabbix-server-mysql
+cb186e90929c   zabbix/zabbix-java-gateway:alpine-6.0-latest      "docker-entrypoint.s…"   7 minutes ago    Up 7 minutes    10052/tcp                                         zabbix-java-gateway</pre>
+        </code>
+        <p>Download Docker Compose on Linux.</p>
+        <code>
+          <pre>
+[root@server-centos7 arif]# curl -s https://api.github.com/repos/docker/compose/releases/latest | grep browser_download_url  | grep docker-compose-linux-x86_64 | cut -d '"' -f 4 | wget -qi -
+          </pre>
+        </code>
+        <p>Jadikan biner dapat dieksekusi.</p>
+        <code>
+          <pre>
+[root@server-centos7 arif]# chmod +x docker-compose-linux-x86_64</pre>
+        </code>
+        <p>Pindahkan file ke PATH Anda.</p>
+        <code>
+          <pre>
+[root@server-centos7 arif]# sudo mv docker-compose-linux-x86_64 /usr/local/bin/docker-compose
+</pre>
+        </code>
+        <p>Verifikasi instalasi.</p>
+        <code>
+          <pre>
+[arif@server-centos7 ~]$ docker-compose version
+Docker Compose version v2.6.0
+          </pre>
+        </code>
+        <p>Buat file komposisi docker untuk container:</p>
+        <code>
+          <pre>[arif@server-centos7 ~]$ vi docker-compose.yml </pre>
+         </code>
+         <p>File akan berisi baris di bawah ini:</p>
+         <code>
+           <pre>
+version: '3.5'
+services:
+ mysql-server:
+  image: mysql:8.0
+  networks:
+   - zbx_net
+  command:
+   - mysqld
+   - --character-set-server=utf8
+   - --collation-server=utf8_bin
+   - --default-authentication-plugin=mysql_native_password
+  environment:
+   - MYSQL_USER=zabbix
+   - MYSQL_DATABASE=zabbixdb
+   - MYSQL_PASSWORD=Password12345
+   - MYSQL_ROOT_PASSWORD=Password123
+   - ZBX_JAVAGATEWAY=zabbix-java-gateway
+  volumes:
+   - /zabbix-mysql:/var/lib/mysql:rw
+ zabbix-server-mysql:
+  image: zabbix/zabbix-server-mysql:alpine-latest
+  networks:
+   - zbx_net
+  ports:
+   - 10051:10051
+  volumes:
+   - /etc/localtime:/etc/localtime:ro
+   - /etc/timezone:/etc/timezone:ro 
+   - /zabbix-data/alertscripts:/usr/lib/zabbix/alertscripts:ro
+   - /zabbix-data/externalscripts:/usr/lib/zabbix/externalscripts:ro
+   - /zabbix-data/export:/var/lib/zabbix/export:rw
+   - /zabbix-data/modules:/var/lib/zabbix/modules:ro
+   - /zabbix-data/enc:/var/lib/zabbix/enc:ro
+   - /zabbix-data/ssh_keys:/var/lib/zabbix/ssh_keys:ro
+   - /zabbix-data/mibs:/var/lib/zabbix/mibs:ro
+   - /zabbix-data/snmptraps:/var/lib/zabbix/snmptraps:rw
+  environment:
+   - DB_SERVER_HOST=mysql-server
+   - MYSQL_DATABASE=zabbixdb
+   - MYSQL_USER=zabbix
+   - MYSQL_PASSWORD=Password12345
+   - MYSQL_ROOT_PASSWORD=Password123
+   - ZBX_JAVAGATEWAY=zabbix-java-gateway
+
+  depends_on:
+   - mysql-server
+
+ zabbix-web-nginx-mysql:
+  image: zabbix/zabbix-web-nginx-mysql:alpine-6.0-latest
+  networks:
+   - zbx_net
+  ports:
+   - 80:8080
+   - 443:8443
+  volumes:
+   - /etc/localtime:/etc/localtime:ro
+   - /etc/timezone:/etc/timezone:ro
+   - /zabbix-nginx/nginx:/etc/ssl/nginx:ro
+   - /zabbix-nginx/modules/:/usr/share/zabbix/modules/:ro
+  environment:
+   - ZBX_SERVER_HOST=zabbix-server-mysql
+   - DB_SERVER_HOST=mysql-server
+   - MYSQL_DATABASE=zabbixdb
+   - MYSQL_USER=zabbix
+   - MYSQL_PASSWORD=Password12345
+   - MYSQL_ROOT_PASSWORD=Password123
+  depends_on:
+   - mysql-server
+   - zabbix-server-mysql
+ zabbix-java-gateway:
+  image: zabbix/zabbix-java-gateway:alpine-6.0-latest
+  networks:
+   - zbx_net
+  ports:
+   - 10052:10052
+networks:
+ zbx_net:
+   driver: bridge
+           </pre>
+         </code>
+         <p>Hapus wadah saat ini:</p>
+         <code>
+           <pre>
+[arif@server-centos7 ~]$ sudo su
+[root@server-centos7 arif]# for i in mysql-server zabbix-java-gateway zabbix-server-mysql zabbix-web-nginx-mysql; do
+   docker rm -f $i
+ done</pre>
+         </code>
+         <p>COPY KAN FILE BINARRY NYA BIAR BISA DI JALAN KAN DENGAN SUDO</p>
+         <code>
+           <pre>
+[root@server-centos7 arif]# cp -Rf /usr/local/bin/docker-compose /bin/</pre>
+         </code>
+         <p>Verifikasi apakah wadah sedang berjalan:</p>
+         <code>
+           <pre>
+[root@server-centos7 arif]# docker-compose ps
+NAME                            COMMAND                  SERVICE                  STATUS              PORTS
+arif-mysql-server-1             "docker-entrypoint.s…"   mysql-server             running             33060/tcp
+arif-zabbix-java-gateway-1      "docker-entrypoint.s…"   zabbix-java-gateway      running             0.0.0.0:10052->10052/tcp, :::10052->10052/tcp
+arif-zabbix-server-mysql-1      "/sbin/tini -- /usr/…"   zabbix-server-mysql      running             0.0.0.0:10051->10051/tcp, :::10051->10051/tcp
+arif-zabbix-web-nginx-mysql-1   "docker-entrypoint.sh"   zabbix-web-nginx-mysql   running             0.0.0.0:80->8080/tcp, 0.0.0.0:443->8443/tcp, :::80->8080/tcp, :::443->8443/tcp</pre>
+         </code>
+         <p>INSTALL UFW</p>
+         <code>
+           <pre>
+[root@server-centos7 arif]# sudo yum install epel-release
+[root@server-centos7 arif]# yum install --enablerepo="epel" ufw
+[root@server-centos7 arif]# ufw --version
+ufw 0.35
+Copyright 2008-2015 Canonical Ltd.</pre>
+         </code>
+         <p>DI COBA DULU PAKAI INI DULU KALAU GA BISA PAKAI > UFW</p>
+         <code>
+           <pre>
+[root@server-centos7 arif]# systemctl start firewalld.service 
+[root@server-centos7 arif]# sudo firewall-cmd --permanent --add-port=10051/tcp
+[root@server-centos7 arif]# sudo firewall-cmd --permanent --add-port=80/tcp
+[root@server-centos7 arif]# sudo firewall-cmd --reload</pre>
+         </code>
+         <p>ATAU PAKAI INI</p>
+         <code>
+           <pre>
+[root@server-centos7 arif]# systemctl start ufw.service 
+[root@server-centos7 arif]# systemctl status ufw.service 
+[root@server-centos7 arif]# systemctl restart ufw.service 
+[root@server-centos7 arif]# systemctl enable ufw.service</pre>
+         </code>
+         <p>Anda harus mengizinkan layanan melalui firewall:</p>
+         <code>
+           <pre>
+[root@server-centos7 arif]# sudo ufw allow 80/tcp
+[root@server-centos7 arif]# sudo ufw allow 10051/tcp</pre>
+         </code>
+         <p>OPEN BROWSER > http://192.168.100.25</p>
+         <p>Masuk menggunakan kredensial default:</p>
+         <p>Username: Admin
+Password: zabbix</p>
+        <img src="img-selesai-install/2.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <img src="img-selesai-install/4.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <p>
+Lanjutkan dan ubah kata sandi admin di bawah Administrasi > Pengguna > Admin > Kata Sandi > Ubah Kata Sandi
+JANGAN LUPA GANTI TIME ZONE NYA ASIA/JAKARTA, Sekalian Ganti Theme</p>
+        <img src="img-selesai-install/5.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <p>Setelah kata sandi pilihan ditetapkan, klik perbarui</p>
+        <img src="img-selesai-install/6.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <img src="img-selesai-install/7.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <p>
+Next – Konfigurasikan host Target Pemantauan Zabbix.
+Kami sekarang akan mengkonfigurasi server ini untuk pemantauan dengan menginstal paket agen Zabbix pada mesin klien. Paket agen Zabbix dapat diinstal seperti di bawah ini:
+SEBELUM INSTALL CHECK DULU VERSION TERBARU NYA DI > https://repo.zabbix.com/zabbix/6.0/debian/pool/main/z/zabbix-release/
+DI SERVER CLIENT > DEBIAN SERVER 11</p>
+        <p>KALO TIDAK CONNECT MASUKAN nameserrver 192.168.100.1</p>
+        <code>
+          <pre>
+root@server-debian11:/usr/local/src# vi /etc/resolv.conf 
+nameserver 192.168.100.1</pre>
+        </code>
+        <code>
+          <pre>
+root@server-debian11:/mnt/data# cd /usr/local/src/</pre>
+        </code>
+        <p>KALO PAKAI YANG TERBARU REPOSITORY NYA, KALO TIDAK ADA PACKAGE NYA!</p>
+        <code>
+          <pre>
+root@server-debian11:/usr/local/src# wget https://repo.zabbix.com/zabbix/6.1/debian/pool/main/z/zabbix-release/zabbix-release_6.1-2+debian10_all.deb
+root@server-debian11:/usr/local/src# ls
+zabbix-release_6.0-1+debian11_all.deb
+root@server-debian11:/usr/local/src# dpkg -i zabbix-release_6.1-2+debian10_all.deb 
+root@server-debian11:/usr/local/src# sudo apt update
+root@server-debian11:/usr/local/src# sudo apt install zabbix-agent zabbix-sender</pre>
+        </code>
+        <p>Setelah terinstal, buat konfigurasi di bawah ini.</p>
+        <code>
+          <pre>
+root@server-debian11:/usr/local/src# vi /etc/zabbix/zabbix_agentd.conf</pre>
+        </code>
+        <p>
+MASUKAN IP SERVER ZABBIX 192.168.100.25 
+Edit file seperti di bawah ini:</p>
+        <code>
+          <pre>
+# On line 117 - Specify Zabbix server IP Address
+Server=192.168.100.25
+
+# On line 158 - Specify Zabbix server ( For active checks)
+ServerActive=192.168.100.25
+
+# On line 169 - Set hostname of the Zabbix agent
+Hostname=agent1.browtesting</pre>
+        </code>
+        <p>
+Mulai dan aktifkan layanan:</p>
+        <code>
+          <pre>
+root@server-debian11:/usr/local/src# sudo systemctl start zabbix-agent
+root@server-debian11:/usr/local/src# sudo systemctl restart zabbix-agent
+root@server-debian11:/usr/local/src# sudo systemctl enable zabbix-agent</pre>
+        </code>
+        <p>
+Anda juga perlu mengizinkan port melalui firewall:
+INSTALL DULU FIREWALL NYA</p>
+        <code>
+          <pre>
+root@server-debian11:/usr/local/src# sudo apt -y install firewalld
+root@server-debian11:/usr/local/src# apt policy firewalld
+root@server-debian11:/usr/local/src# sudo firewall-cmd --state
+root@server-debian11:/usr/local/src# sudo ufw disable</pre>
+        </code>
+        <p>Check</p>
+        <code>
+          <pre>
+root@server-debian11:/usr/local/src# sudo firewall-cmd --list-all
+public
+  target: default
+  icmp-block-inversion: no
+  interfaces: 
+  sources: 
+  services: dhcpv6-client ssh
+  ports: 
+  protocols: 
+  forward: no
+  masquerade: no
+  forward-ports: 
+  source-ports: 
+  icmp-blocks: 
+  rich rules: 
+
+root@server-debian11:/usr/local/src# sudo firewall-cmd --get-services
+root@server-debian11:/usr/local/src# sudo firewall-cmd --permanent --add-port=10050/tcp
+root@server-debian11:/usr/local/src# sudo firewall-cmd --reload</pre>
+        </code>
+        <p>NEXT PINDAH KE SERVER ZABBIX 
+Tambahkan Agen Zabbix ke Server Zabbix
+Agen Zabbix sekarang dapat ditambahkan ke server dengan menavigasi ke Konfigurasi > Host > Buat host.</p>
+        <p> Anda diminta untuk menyediakan:</p>
+        <p> > Nama host agen Zabbix yang akan dipantau harus sesuai dengan yang dimasukkan dalam file konfigurasi agen.</p>
+        <p> > Nama yang terlihat untuk agen Zabbix.</p>
+        <p> > Pilih grup atau tambahkan grup baru dari bidang "Grup".</p>
+        <p> > Alamat IP agen Zabbix</p>
+        <p> > Port layanan agen Zabbix, port default adalah 10050</p>
+        <p> > Isi data-datanya seperti gambar di bawah ini:</p>
+        <p> > SAMAKAN SEPERTI FILE CONFIGURASI TADI DI ATAS !! </p>
+        <p> > IP 192.168.100.79 ITU IP SERVER CLIENT > DEBIAN SERVER 11 </p>
+        <img src="img-monitoring-server-debian11/8.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <img src="img-monitoring-server-debian11/9.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <img src="img-monitoring-server-debian11/10.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <p>
+Ingatlah untuk menambahkan template pemantauan tergantung pada apa yang ingin Anda pantau pada agen: Kemudian klik tambahkan untuk menambahkan agen. Setelah ditambahkan, agen akan tersedia seperti di bawah ini:</p>
+        <img src="img-monitoring-server-debian11/11.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <p>
+Setelah ditambahkan, navigasikan ke Monitoring > Hosts dan pilih host yang diinginkan untuk dipantau. Kemudian pilih grafik untuk melihat data.</p>
+        <p>KALO TIDAK CONNECT KE SERVER CLIENT COBA RESTART LAGI</p>
+        <p>Check</p>
+        <code>
+          <pre>
+root@server-debian11:/usr/local/src# sudo firewall-cmd --permanent --add-port=10050/tcp
+root@server-debian11:/usr/local/src# sudo firewall-cmd --reload
+root@server-debian11:/usr/local/src# sudo systemctl start zabbix-agent
+root@server-debian11:/usr/local/src# sudo systemctl restart zabbix-agent
+root@server-debian11:/usr/local/src# sudo systemctl enable zabbix-agent</pre>
+        <img src="img-monitoring-server-debian11/12.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <img src="img-monitoring-server-debian11/13.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <img src="img-monitoring-server-debian11/14.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <p>Menambahkan Template</p>
+        <img src="img-monitoring-server-debian11/15.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        <p>Tampilan Graphs</p>
+        <img src="img-monitoring-server-debian11/16.png" alt="login" width="1000" class="rounded-circle img-thumbnail" />
+        </code>
       </section>
 
       <section class="main-section" id="Installation_Snort">
@@ -259,25 +687,25 @@ http://192.168.100.127:5500/</pre>
         <p>Untuk menginstal Snort dari repositori snowl/snort, jalankan perintah berikut:</p>
         <code>
           <pre>
-            root@server-ubuntu:/home/arif# add-apt-repository ppa:snowl/snort
-            root@server-ubunu:/home/arif# apt update
-            root@server-ubuntu:/home/arif# apt install -y snort</pre>
+root@server-ubuntu:/home/arif# add-apt-repository ppa:snowl/snUntuk menginstal Snort dari repositori snowl/snort, jalankan perintah berikut:ort
+root@server-ubunu:/home/arif# apt update
+root@server-ubuntu:/home/arif# apt install -y snort</pre>
           </code>
           <p>Sebaiknya nonaktifkan autorun dengan perintah Snort yang dijelaskan di bawah ini. Snowl akan mengontrol mulai dan berhenti</p>
           <code>
             <pre>
-              root@server-ubuntu:/home/arif# systemctl stop snort</pre>
+root@server-ubuntu:/home/arif# systemctl stop snort</pre>
             </code>
             <p>Untuk memasang sensor Snowl, jalankan:</p>
             <code>
               <pre>
-                wget https://snowl.io/download/snowl-sensor_1.7.2_amd64.deb && dpkg -i ./snowl-sensor_1.7.2_amd64.deb</pre>
+wget https://snowl.io/download/snowl-sensor_1.7.2_amd64.deb && dpkg -i ./snowl-sensor_1.7.2_amd64.deb</pre>
               </code>
         <p>Kemudian, Anda perlu mengatur hak untuk pengoperasian sensor Snowl dengan Snort (mulai/berhenti). Untuk tujuan ini, jalankan:</p>
         <code>
           <pre>
-            root@server-ubuntu:/home/arif# /opt/snowl-sensor/snowl-snort fix
-            Success</pre>
+root@server-ubuntu:/home/arif# /opt/snowl-sensor/snowl-snort fix
+Success</pre>
           </code>
           <P>Configuration</P>
           <P>Masukan Rule Nya Yang Sudah Tersedia</P>
